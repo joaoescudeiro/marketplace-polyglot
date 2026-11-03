@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import './App.css'
 
 const produtos = [
@@ -6,46 +7,57 @@ const produtos = [
     nome: 'Smartphone Samsung Galaxy',
     categoria: 'Celulares',
     preco: 1899.90,
-    emoji: '📱',
+    imagem: '/imagens/smartphone.png',
   },
   {
     id: 2,
     nome: 'Notebook Lenovo IdeaPad',
     categoria: 'Informática',
     preco: 3299.90,
-    emoji: '💻',
+    imagem: '/imagens/notebook.png',
   },
   {
     id: 3,
     nome: 'Fone Bluetooth JBL',
     categoria: 'Áudio',
     preco: 249.90,
-    emoji: '🎧',
+    imagem: '/imagens/fone.png',
   },
   {
     id: 4,
     nome: 'Smartwatch Xiaomi',
     categoria: 'Acessórios',
     preco: 399.90,
-    emoji: '⌚',
+    imagem: '/imagens/smartwatch.png',
   },
 ]
 
+type Produto = typeof produtos[number];
+
 function App() {
+  const [busca, setBusca] = useState("");
+  const [carrinho, setCarrinho] = useState<Produto[]>([]);
+  const [carrinhoAberto, setCarrinhoAberto] = useState(false);
+  const produtosFiltrados = produtos.filter((produto) => produto.nome.toLowerCase().includes(busca.toLowerCase()));
   return (
     <div className="app">
       <header className="cabecalho">
+        {carrinhoAberto && (
+          <div className="painel-carrinho">
+            <h2>Meu carrinho</h2>
+            {carrinho.map((produto) => (
+              <p key={produto.id}>{produto.nome}</p>
+              ))}
+          </div>
+        )}
         <a className="logo" href="#">
           Electronicos
         </a>
         <div className="pesquisa">
-          <input
-            type="text"
-            placeholder="O que você está procurando?"
-            aria-label="Pesquisar produtos" />
+          <input type="text" placeholder="O que você está procurando?" value={busca} onChange={(event) => setBusca(event.target.value)} />
           <button aria-label="Pesquisar">🔎</button>
         </div>
-        <button className="botao-carrinho"> 🛒 Carrinho </button>
+        <button className="botao-carrinho" onClick={() => setCarrinhoAberto(!carrinhoAberto)}> 🛒 Carrinho ({carrinho.length})</button>
       </header>
       <main>
         <section className="banner">
@@ -53,9 +65,7 @@ function App() {
             <span className="etiqueta">TECNOLOGIA PARA VOCÊ</span>
             <h1>O futuro está<br />na palma da sua mão.</h1>
             <p>Encontre os melhores eletrônicos em um só lugar.</p>
-            <a href="#produtos" className="botao-banner">
-              Explorar produtos
-            </a>
+            <a href="#produtos" className="botao-banner"> Explorar produtos </a>
           </div>
           <div className="banner-emoji">🎮</div>
         </section>
@@ -69,10 +79,10 @@ function App() {
             </span>
           </div>
           <div className="grade-produtos">
-            {produtos.map((produto) => (
+            {produtosFiltrados.map((produto) => (
               <article className="card-produto" key={produto.id}>
                 <div className="imagem-produto">
-                  <span>{produto.emoji}</span>
+                  <img src={produto.imagem} alt={produto.nome} />
                 </div>
                 <div className="info-produto">
                   <span className="categoria">{produto.categoria}</span>
@@ -82,8 +92,7 @@ function App() {
                   </p>
                   <button
                     className="botao-comprar"
-                    onClick={() => alert(`${produto.nome} selecionado!`)}>
-                    + Adicionar ao carrinho
+                  onClick={() => { setCarrinho((carrinhoAnterior) =>[...carrinhoAnterior, produto]); alert(`${produto.nome} adicionado ao carrinho!`); }}> Adicionar ao carrinho
                   </button>
                 </div>
               </article>
