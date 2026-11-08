@@ -95,6 +95,22 @@ async function resolverItem(item: ItemEntrada) {
   };
 }
 
+async function ajustarEstoque(produtoId: string, delta: number) {
+  let resp: globalThis.Response;
+  try {
+    resp = await fetch(`${PRODUTOS_URL}/produtos/${encodeURIComponent(produtoId)}/estoque`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ delta }),
+    });
+  } catch {
+    throw new HttpError(502, 'Serviço de produtos indisponível');
+  }
+  if (resp.status === 409) throw new HttpError(409, `Estoque insuficiente para o produto ${produtoId}`);
+  if (resp.status === 404) throw new HttpError(404, `Produto ${produtoId} não encontrado`);
+  if (!resp.ok) throw new HttpError(502, 'Erro ao atualizar o estoque');
+}
+
 // ---------- Queries ----------
 const INSERT_POR_CLIENTE = `INSERT INTO pedidos_por_cliente
   (cliente_id, criado_em, pedido_id, status, total_centavos, itens) VALUES (?, ?, ?, ?, ?, ?)`;
@@ -149,13 +165,30 @@ app.post(
     const cliente = types.Uuid.fromString(clienteId);
     const criadoEm = new Date();
 
-    await client.batch(
-      [
-        { query: INSERT_POR_CLIENTE, params: [cliente, criadoEm, pedidoId, 'CRIADO', total, itensResolvidos] },
-        { query: INSERT_POR_ID, params: [pedidoId, cliente, criadoEm, 'CRIADO', total, itensResolvidos] },
-      ],
-      { prepare: true, consistency },
-    );
+    // Baixa o estoque no MongoDB; se algo falhar, devolve o que já foi baixado
+    const reservados: { produtoId: string; quantidade: number }[] = [];
+    try {
+      if (PRODUTOS_URL) {
+        for (const i of itensResolvidos) {
+          await ajustarEstoque(i.produto_id, -i.quantidade);
+          reservados.push({ produtoId: i.produto_id, quantidade: i.quantidade });
+        }
+      }
+      await client.batch(
+        [
+          { query: INSERT_POR_CLIENTE, params: [cliente, criadoEm, pedidoId, 'CRIADO', total, itensResolvidos] },
+          { query: INSERT_POR_ID, params: [pedidoId, cliente, criadoEm, 'CRIADO', total, itensResolvidos] },
+        ],
+        { prepare: true, consistency },
+      );
+    } catch (err) {
+      for (const r of reservados) {
+        await ajustarEstoque(r.produtoId, r.quantidade).catch((e) =>
+          console.error('Falha ao devolver estoque', r.produtoId, e),
+        );
+      }
+      throw err;
+    }
 
     const row = await buscarPedidoPorId(pedidoId.toString());
     res.status(201).json(toPedido(row));
@@ -205,6 +238,14 @@ app.put(
       ],
       { prepare: true, consistency },
     );
+    // Cancelar um pedido devolve os itens ao estoque
+    if (PRODUTOS_URL && status === 'CANCELADO' && row['status'] !== 'CANCELADO') {
+      for (const i of row['itens'] ?? []) {
+        await ajustarEstoque(i.produto_id, i.quantidade).catch((e) =>
+          console.error('Falha ao devolver estoque', i.produto_id, e),
+        );
+      }
+    }
     res.json(toPedido(await buscarPedidoPorId(String(req.params.id))));
   }),
 );

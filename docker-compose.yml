@@ -34,6 +34,73 @@ services:
       retries: 20
       start_period: 60s
 
+  # MongoDB: replica set "rs0" com 3 nós
+  mongo1:
+    image: mongo:7
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo1_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+
+  mongo2:
+    image: mongo:7
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - mongo2_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+
+  mongo3:
+    image: mongo:7
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - mongo3_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+
+  # Inicializa o replica set uma vez e termina
+  mongo-init:
+    image: mongo:7
+    restart: "no"
+    depends_on:
+      mongo1:
+        condition: service_healthy
+      mongo2:
+        condition: service_healthy
+      mongo3:
+        condition: service_healthy
+    command:
+      - mongosh
+      - --host
+      - mongo1:27017
+      - --quiet
+      - --eval
+      - |
+        try {
+          rs.status();
+        } catch (e) {
+          rs.initiate({
+            _id: "rs0",
+            members: [
+              { _id: 0, host: "mongo1:27017" },
+              { _id: 1, host: "mongo2:27017" },
+              { _id: 2, host: "mongo3:27017" }
+            ]
+          });
+        }
+
   # ---------- Serviços ----------
   servico-clientes:
     build: ./servico-clientes
@@ -47,6 +114,19 @@ services:
         condition: service_healthy
     restart: on-failure
 
+  servico-produtos:
+    build: ./servico-produtos
+    environment:
+      PORT: 3002
+      MONGO_URI: mongodb://mongo1:27017,mongo2:27017,mongo3:27017/?replicaSet=rs0
+      MONGO_DB: marketplace
+    ports:
+      - "3002:3002"
+    depends_on:
+      mongo-init:
+        condition: service_completed_successfully
+    restart: on-failure
+
   servico-pedidos:
     build: ./servico-pedidos
     environment:
@@ -57,7 +137,7 @@ services:
       CASSANDRA_RF: 1
       CASSANDRA_CONSISTENCY: quorum
       CLIENTES_URL: http://servico-clientes:3001
-      PRODUTOS_URL: ${PRODUTOS_URL:-}
+      PRODUTOS_URL: http://servico-produtos:3002
     ports:
       - "3003:3003"
     depends_on:
@@ -65,20 +145,23 @@ services:
         condition: service_healthy
       servico-clientes:
         condition: service_started
+      servico-produtos:
+        condition: service_started
     restart: on-failure
 
-  # ---------- Parte da dupla (adicionar quando estiver pronta) ----------
-  # servico-produtos:
-  #   build: ./servico-produtos
-  #   ports:
-  #     - "3002:3002"
-  #   (adicionar também o MongoDB / replica set aqui)
-  #
-  # frontend:
-  #   build: ./frontend
-  #   ports:
-  #     - "5173:80"
+  # ---------- Frontend (Vite + React, servido pelo nginx) ----------
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - servico-clientes
+      - servico-produtos
+      - servico-pedidos
 
 volumes:
   postgres_data:
   cassandra_data:
+  mongo1_data:
+  mongo2_data:
+  mongo3_data:

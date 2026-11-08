@@ -1,0 +1,217 @@
+/* Estilos das telas novas (carrinho, menu, formulários e tabelas) */
+.cabecalho {
+  position: relative;
+}
+
+.menu {
+  display: flex;
+  gap: 6px;
+}
+
+.menu button {
+  padding: 9px 13px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #172033;
+  font-weight: 600;
+}
+
+.menu button:hover {
+  background: #f0f1ff;
+}
+
+.menu button.ativo {
+  background: #e9eaff;
+  color: #494ac3;
+}
+
+.painel-carrinho {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 7%;
+  z-index: 20;
+  width: min(420px, 92vw);
+  padding: 18px;
+  border: 1px solid #e0e4ed;
+  border-radius: 14px;
+  background: #fff;
+  color: #172033;
+  box-shadow: 0 18px 40px #252b4826;
+}
+
+.painel-carrinho h2 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+
+.item-carrinho {
+  display: grid;
+  grid-template-columns: 1fr 58px auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eef0f6;
+  font-size: 14px;
+}
+
+.item-carrinho input {
+  width: 100%;
+  padding: 6px;
+}
+
+.botao-pequeno {
+  border: 0;
+  background: transparent;
+  color: #b42318;
+  font-weight: 700;
+}
+
+.total {
+  margin: 12px 0;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.estoque {
+  display: block;
+  color: #777b8b;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.botao-comprar:disabled {
+  background: #b8bacb;
+  cursor: not-allowed;
+}
+
+.erro {
+  color: #b42318;
+  font-size: 14px;
+}
+
+.ok {
+  color: #067647;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pagina {
+  padding: 36px 0 60px;
+  color: #172033;
+}
+
+.pagina h2 {
+  margin: 0 0 18px;
+  letter-spacing: -0.6px;
+}
+
+.painel {
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px solid #eaedf4;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.painel label,
+.painel-carrinho label {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.form-linha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.form-linha input {
+  flex: 1 1 160px;
+}
+
+.pagina input,
+.pagina select,
+.painel-carrinho input,
+.painel-carrinho select {
+  padding: 10px 12px;
+  border: 1px solid #e0e4ed;
+  border-radius: 8px;
+  background: #fff;
+  color: #172033;
+}
+
+.painel-carrinho select,
+.painel select {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.form-linha .botao-comprar {
+  width: auto;
+  padding: 10px 18px;
+}
+
+.botao-secundario,
+.botao-perigo {
+  padding: 8px 12px;
+  border: 1px solid #e0e4ed;
+  border-radius: 8px;
+  background: #fff;
+  color: #172033;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.botao-perigo {
+  border-color: #f4c7c3;
+  color: #b42318;
+}
+
+.tabela-wrap {
+  overflow-x: auto;
+  border: 1px solid #eaedf4;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.tabela {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tabela th,
+.tabela td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #eef0f6;
+  text-align: left;
+  color: #172033;
+}
+
+.tabela .acoes {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.pedido-topo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+.pedido-topo select {
+  width: auto;
+  margin: 0;
+}
+
+.pedido ul {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  font-size: 14px;
+}
