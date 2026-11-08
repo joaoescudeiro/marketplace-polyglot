@@ -1,6 +1,6 @@
 # Marketplace de Eletrônicos — Polyglot Persistence
 
-Projeto da disciplina de tópicos avançados de bancos de dados.
+Projeto da disciplina de Performance e Tunning de dados.
 
 ## 1. Tema
 Um marketplace de produtos eletrônicos em que clientes se cadastram, consultam produtos e realizam compras.
