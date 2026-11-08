@@ -1,0 +1,84 @@
+services:
+  # ---------- Bancos ----------
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: clientes
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./servico-clientes/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d clientes"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  cassandra:
+    image: cassandra:4.1
+    environment:
+      CASSANDRA_CLUSTER_NAME: marketplace
+      MAX_HEAP_SIZE: 512M
+      HEAP_NEWSIZE: 128M
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe keyspaces' > /dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
+
+  # ---------- Serviços ----------
+  servico-clientes:
+    build: ./servico-clientes
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/clientes
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
+  servico-pedidos:
+    build: ./servico-pedidos
+    environment:
+      PORT: 3003
+      CASSANDRA_HOSTS: cassandra
+      CASSANDRA_DC: datacenter1
+      CASSANDRA_KEYSPACE: marketplace
+      CASSANDRA_RF: 1
+      CASSANDRA_CONSISTENCY: quorum
+      CLIENTES_URL: http://servico-clientes:3001
+      PRODUTOS_URL: ${PRODUTOS_URL:-}
+    ports:
+      - "3003:3003"
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      servico-clientes:
+        condition: service_started
+    restart: on-failure
+
+  # ---------- Parte da dupla (adicionar quando estiver pronta) ----------
+  # servico-produtos:
+  #   build: ./servico-produtos
+  #   ports:
+  #     - "3002:3002"
+  #   (adicionar também o MongoDB / replica set aqui)
+  #
+  # frontend:
+  #   build: ./frontend
+  #   ports:
+  #     - "5173:80"
+
+volumes:
+  postgres_data:
+  cassandra_data:
